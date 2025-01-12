@@ -18,7 +18,7 @@
         @* <col style="max-width: 5%;  min-width: 0"/> *@
         @* <col style="max-width: 13%; min-width: 0"/> *@
         @* <col style="max-width: 5%;  min-width: 0"/> *@
-        <col/>
+        @* <col/> *@
         <col/>
         <col/>
         <col/>
@@ -29,8 +29,8 @@
         <col/>
     </ColGroup>
     <Columns>
-        <PropertyColumn Property="s => s.SearchableIdentifier" Title="Installed" CellStyle="@_cellStyle" />
-        <PropertyColumn Property="s => s.SearchableName" Title="Name" CellStyle="max-width: 400px; min-width: 50px; width: 400px; overflow-x: hidden; white-space: nowrap;"/>
+        @* <PropertyColumn Property="s => s.SearchableIdentifier" Title="Installed" CellStyle="@_cellStyle" /> *@
+        <PropertyColumn Property="s => s.SearchableName" Title="Name" CellStyle="max-width: 310px; min-width: 50px; width: 310px; overflow-x: hidden; white-space: nowrap;"/>
         <PropertyColumn Property="s => s.SearchableAuthors" Title="Author" CellStyle="@_cellStyle" Sortable="false">
             <CellTemplate>
                 @(string.Join(", ", context.Item.SearchableAuthors))
