@@ -35,4 +35,9 @@
 	  </None>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\Cmdline\CKAN-cmdline.csproj" />
+	  <ProjectReference Include="..\Core\CKAN-core.csproj" />
+	</ItemGroup>
+
 </Project>

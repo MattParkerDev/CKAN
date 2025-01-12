@@ -1,7 +1,27 @@
 ﻿@page "/"
+@using CKAN.CmdLine
+@using CKAN.Games.KerbalSpaceProgram
+@using GameInstance = CKAN.GameInstance
 
 <MudText>Welcome to a new Photino Blazor app!</MudText>
 
 @code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = new ConsoleUser(true);
+        var game = new KerbalSpaceProgram();
+        var gameInstance = new GameInstance(game, @"C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program", "KSP", user);
+        var repositoryDataManager = new RepositoryDataManager();
+        var registryManager = RegistryManager.Instance(gameInstance, repositoryDataManager);
+        IRegistryQuerier registry = registryManager.registry;
+
+        repositoryDataManager.Prepopulate(registry.Repositories.Values.ToList(), null);
+
+        if (!registryManager.registry.HasAnyAvailable())
+        {
+            // Abort the refresh so we can update the repo data
+        }
+    }
 
 }
