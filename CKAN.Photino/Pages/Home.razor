@@ -3,10 +3,21 @@
 @inject RepositoryDataManager RepositoryDataManager
 @inject RegistryManager RegistryManager
 
-@foreach(var module in _ckanModules)
-{
-    <MudText>@module.SearchableName</MudText>
-}
+@* @foreach(var module in _ckanModules) *@
+@* { *@
+@*     <MudText>@module.SearchableName</MudText> *@
+@* } *@
+
+<MudDataGrid Items="@_ckanModules">
+    <Columns>
+        <PropertyColumn Property="arg => arg.SearchableName" />
+        <PropertyColumn Property="arg => arg.SearchableAuthors">
+            <CellTemplate>
+                @(string.Join(", ", context.Item.SearchableAuthors))
+            </CellTemplate>
+        </PropertyColumn>
+    </Columns>
+</MudDataGrid>
 
 @code {
 
