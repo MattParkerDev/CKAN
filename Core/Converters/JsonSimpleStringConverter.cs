@@ -11,25 +11,39 @@ namespace CKAN
     /// </summary>
     public class JsonSimpleStringConverter<T> : JsonConverter<T>
     {
-        /// <summary>
-        /// We *only* want to be triggered for types that have explicitly
-        /// set an attribute in their class saying they can be converted.
-        /// By returning false here, we declare we're not interested in participating
-        /// in any other conversions.
-        /// </summary>
-        /// <returns>
-        /// false
-        /// </returns>
-        // public override bool CanConvert(Type objectType)
-        // {
-        //     return false;
-        // }
-
         public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonTokenType.String)
+            try
             {
-                return (T?)Activator.CreateInstance(typeof(T), reader.GetString());
+                if (reader.TokenType is JsonTokenType.String)
+                {
+                    var myObject = Activator.CreateInstance(typeToConvert, reader.GetString());
+                    return (T?)myObject;
+                }
+                if (reader.TokenType is JsonTokenType.Number)
+                {
+                    var isLong = reader.TryGetInt64(out var longNum);
+                    if (isLong)
+                    {
+                        var myObject = Activator.CreateInstance(typeToConvert, longNum.ToString());
+                        return (T?)myObject;
+                    }
+                    var isDouble = reader.TryGetDouble(out var doubleNum);
+                    if (isDouble)
+                    {
+                        var myObject = Activator.CreateInstance(typeToConvert, doubleNum.ToString());
+                        return (T?)myObject;
+                    }
+
+                    return default;
+                    //var myObject = Activator.CreateInstance(typeToConvert, reader.GetInt64().ToString());
+                    //return (T?)myObject;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
             }
 
             return default;

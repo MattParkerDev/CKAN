@@ -69,7 +69,8 @@ namespace CKAN
         // First element is the oldest version, last is the newest.
         [JsonPropertyName("module_version")]
         [JsonInclude]
-        [JsonConverter(typeof(JsonLeakySortedDictionaryConverter<ModuleVersion, CkanModule>))]
+        //[JsonConverter(typeof(JsonLeakySortedDictionaryConverter<ModuleVersion, CkanModule>))]
+        [JsonConverter(typeof(DictionaryWithErrorHandlingConverter))]
         internal SortedDictionary<ModuleVersion, CkanModule> module_version =
             new SortedDictionary<ModuleVersion, CkanModule>();
 
