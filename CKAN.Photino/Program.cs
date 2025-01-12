@@ -20,7 +20,7 @@ public class Program
 		var app = appBuilder.Build();
 
 		app.MainWindow
-			.SetSize(1400, 800)
+			.SetSize(2000, 800)
 			.SetDevToolsEnabled(true)
 			.SetLogVerbosity(0)
 			//.SetIconFile("favicon.ico")

@@ -8,16 +8,20 @@
 @* { *@
 @*     <MudText>@module.SearchableName</MudText> *@
 @* } *@
-
-<MudDataGrid Items="@_ckanModules" Loading="@_loading">
+<MudDataGrid Height="calc(100vh - 150px)" Items="@_ckanModules" Loading="@_loading" FixedHeader="true">
     <Columns>
-        <PropertyColumn Property="s => s.SearchableName" />
-        <PropertyColumn Property="s => s.SearchableAuthors" Sortable="false">
+        <PropertyColumn Property="s => s.SearchableName" Title="Name" />
+        <PropertyColumn Property="s => s.SearchableAuthors" Title="Author" Sortable="false">
             <CellTemplate>
                 @(string.Join(", ", context.Item.SearchableAuthors))
             </CellTemplate>
         </PropertyColumn>
         <PropertyColumn Property="s => s.version" />
+        <PropertyColumn Property="s => s.ksp_version" Title="KSP Version">
+            <CellTemplate>
+                @(context.Item.ksp_version?.ToString() ?? "Any")
+            </CellTemplate>
+        </PropertyColumn>
     </Columns>
 </MudDataGrid>
 
