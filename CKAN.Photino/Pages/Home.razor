@@ -9,26 +9,39 @@
 @* { *@
 @*     <MudText>@module.SearchableName</MudText> *@
 @* } *@
-<MudDataGrid Height="calc(100vh - 150px)" Items="@_ckanModules" Loading="@_loading" FixedHeader="true">
+<MudDataGrid Elevation="2" Height="calc(100vh - 150px)" Dense="true" Items="@_ckanModules" Loading="@_loading" Virtualize="true" FixedHeader="true" ColumnResizeMode="ResizeMode.Column">
+    <ColGroup>
+        <col/>
+        <col style="width: 12%"/>
+        <col style="width: 10%"/>
+        <col style="width: 12%"/>
+        <col style="width: 5%"/>
+        <col style="width: 5%"/>
+        <col style="width: 13%"/>
+        <col style="width: 5%"/>
+        <col style="width: 5%"/>
+    </ColGroup>
     <Columns>
-        <PropertyColumn Property="s => s.SearchableName" Title="Name" />
-        <PropertyColumn Property="s => s.SearchableAuthors" Title="Author" Sortable="false">
+        <PropertyColumn Property="s => s.SearchableName" Title="Name" CellStyle="@_cellStyle"/>
+        <PropertyColumn Property="s => s.SearchableAuthors" Title="Author" CellStyle="@_cellStyle" Sortable="false">
             <CellTemplate>
                 @(string.Join(", ", context.Item.SearchableAuthors))
             </CellTemplate>
         </PropertyColumn>
-        <PropertyColumn Property="s => s.version" Title="Version" />
-        <PropertyColumn Property="s => s.ksp_version" Title="KSP Version" />
-        <PropertyColumn Property="s => s.download_size" Title="Download">
+        <PropertyColumn Property="s => s.version" Title="Version" CellStyle="@_cellStyle"/>
+        <PropertyColumn Property="s => s.ksp_version" Title="KSP Version" CellStyle="@_cellStyle"/>
+        <PropertyColumn Property="s => s.download_size" Title="Download" CellStyle="@_cellStyle">
             <CellTemplate>
                 @ByteSize.FromBits(context.Item.download_size).ToString()
             </CellTemplate>
         </PropertyColumn>
-        <PropertyColumn Property="s => s.install_size" Title="Install">
+        <PropertyColumn Property="s => s.install_size" Title="Install" CellStyle="@_cellStyle">
             <CellTemplate>
                 @ByteSize.FromBits(context.Item.install_size).ToString()
             </CellTemplate>
         </PropertyColumn>
+        <PropertyColumn Property="s => s.release_date" Title="Release Date" CellStyle="@_cellStyle" />
+        <TemplateColumn Title="Downloads" CellStyle="@_cellStyle" />
     </Columns>
 </MudDataGrid>
 <MudText>@_ckanModules.Count items</MudText>
@@ -38,6 +51,8 @@
     private List<AvailableModule> _modules = [];
     private List<CkanModule> _ckanModules = [];
     private bool _loading = false;
+    
+    private const string _cellStyle = "max-width: 30px; min-width: 30px; overflow-x: hidden; white-space: nowrap;";
     protected override async Task OnInitializedAsync()
     {
         _loading = true;
