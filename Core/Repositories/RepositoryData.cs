@@ -160,12 +160,7 @@ namespace CKAN
                 //                 progress.Report(50 + (p / 2)))),
                 // };
 
-                var test = new AvailableModule("test", []);
-                //var test2 = JsonSerializer.Serialize(test);
-
                 var results = JsonSerializer.Deserialize<RepositoryData>(stream, JsonSerializerOptions.Web);
-                //var test = JsonSerializer.Deserialize<RepositoryData>(text, JsonSerializerOptions.Web);
-                //var results = JsonSerializer.Create(settings).Deserialize<RepositoryData>(jStream);
                 return results;
             }
             catch (Exception exc)
