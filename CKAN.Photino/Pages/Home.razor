@@ -36,7 +36,7 @@
         Console.WriteLine($"Prepopulate took {timer.ElapsedMilliseconds}ms");
 
         var repository = RegistryManager.registry.Repositories.Single().Value;
-        var modules = await Task.Run(() => RepositoryDataManager.GetAllAvailableModules(new List<Repository> { repository }).ToList());
+        var modules = await Task.Run(() => RepositoryDataManager.GetAllAvailableModules([repository]).ToList());
         _modules = modules;
         var ckanModules = modules
             .Select(m => m.Latest(ReleaseStatus.stable) ?? throw new InvalidOperationException())
