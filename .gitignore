@@ -30,6 +30,8 @@ bld/
 [Oo]bj/
 [Ll]og/
 
+.idea/
+
 # Don't ignore the root bin folder
 !/bin/
 
