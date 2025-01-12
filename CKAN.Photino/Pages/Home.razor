@@ -1,27 +1,34 @@
 ﻿@page "/"
-@using CKAN.CmdLine
-@using CKAN.Games.KerbalSpaceProgram
-@using GameInstance = CKAN.GameInstance
 
-<MudText>Welcome to a new Photino Blazor app!</MudText>
+@inject RepositoryDataManager RepositoryDataManager
+@inject RegistryManager RegistryManager
+
+@foreach(var module in _ckanModules)
+{
+    <MudText>@module.SearchableName</MudText>
+}
 
 @code {
 
+    private List<AvailableModule> _modules = [];
+    private List<CkanModule> _ckanModules = [];
     protected override async Task OnInitializedAsync()
     {
-        var user = new ConsoleUser(true);
-        var game = new KerbalSpaceProgram();
-        var gameInstance = new GameInstance(game, @"C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program", "KSP", user);
-        var repositoryDataManager = new RepositoryDataManager();
-        var registryManager = RegistryManager.Instance(gameInstance, repositoryDataManager);
-        IRegistryQuerier registry = registryManager.registry;
+        RepositoryDataManager.Prepopulate(RegistryManager.registry.Repositories.Values.ToList(), null);
 
-        repositoryDataManager.Prepopulate(registry.Repositories.Values.ToList(), null);
-
-        if (!registryManager.registry.HasAnyAvailable())
+        if (RegistryManager.registry.HasAnyAvailable() is false)
         {
             // Abort the refresh so we can update the repo data
         }
+
+        var repository = RegistryManager.registry.Repositories.Single().Value;
+        var modules = RepositoryDataManager.GetAllAvailableModules([repository]).ToList();
+        _modules = modules;
+        _ckanModules = modules
+            .Select(m => m.Latest(ReleaseStatus.stable) ?? throw new InvalidOperationException())
+            .OrderBy(m => m.SearchableName)
+            .ToList();
+        Console.WriteLine("Done");
     }
 
 }

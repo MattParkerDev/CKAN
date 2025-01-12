@@ -13,6 +13,7 @@ public class Program
 
 		appBuilder.Services.AddLogging();
 		appBuilder.Services.AddMudServices();
+		appBuilder.Services.AddKsp();
 
 		appBuilder.RootComponents.Add<App>("app");
 
