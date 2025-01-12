@@ -5,30 +5,36 @@
 @inject RepositoryDataManager RepositoryDataManager
 @inject RegistryManager RegistryManager
 
-@* @foreach(var module in _ckanModules) *@
-@* { *@
-@*     <MudText>@module.SearchableName</MudText> *@
-@* } *@
-<MudDataGrid Elevation="2" Height="calc(100vh - 150px)" Dense="true" Items="@_ckanModules" Loading="@_loading" Virtualize="true" FixedHeader="true" ColumnResizeMode="ResizeMode.Column">
+<style>
+    .mod-list-table .mud-table-cell { font-size: 0.7rem; }
+</style>
+<MudDataGrid Class="" Elevation="2" Height="calc(100vh - 150px)" Dense="true" Items="@_ckanModules" Loading="@_loading" Virtualize="true" FixedHeader="true" ColumnResizeMode="@(_loading ? ResizeMode.Column : ResizeMode.Container)">
     <ColGroup>
+        @* <col style="max-width: 10%; min-width: 100px"/> *@
+        @* <col style="max-width: 10%; min-width: 100px"/> *@
+        @* <col style="max-width: 0;  min-width: 0"/> *@
+        @* <col style="max-width: 12%; min-width: 0"/> *@
+        @* <col style="max-width: 5%;  min-width: 0"/> *@
+        @* <col style="max-width: 5%;  min-width: 0"/> *@
+        @* <col style="max-width: 13%; min-width: 0"/> *@
+        @* <col style="max-width: 5%;  min-width: 0"/> *@
         <col/>
-        <col style="width: 12%"/>
-        <col style="width: 10%"/>
-        <col style="width: 12%"/>
-        <col style="width: 5%"/>
-        <col style="width: 5%"/>
-        <col style="width: 13%"/>
-        <col style="width: 5%"/>
-        <col style="width: 5%"/>
+        <col/>
+        <col/>
+        <col/>
+        <col/>
+        <col/>
+        <col/>
+        <col/>
     </ColGroup>
     <Columns>
-        <PropertyColumn Property="s => s.SearchableName" Title="Name" CellStyle="@_cellStyle"/>
+        <PropertyColumn Property="s => s.SearchableName" Title="Name" CellStyle="max-width: 400px; min-width: 50px; width: 400px; overflow-x: hidden; white-space: nowrap;"/>
         <PropertyColumn Property="s => s.SearchableAuthors" Title="Author" CellStyle="@_cellStyle" Sortable="false">
             <CellTemplate>
                 @(string.Join(", ", context.Item.SearchableAuthors))
             </CellTemplate>
         </PropertyColumn>
-        <PropertyColumn Property="s => s.version" Title="Version" CellStyle="@_cellStyle"/>
+        <PropertyColumn Property="s => s.version" Title="Version" Sortable="false" CellStyle="@_cellStyle"/>
         <PropertyColumn Property="s => s.ksp_version" Title="KSP Version" CellStyle="@_cellStyle"/>
         <PropertyColumn Property="s => s.download_size" Title="Download" CellStyle="@_cellStyle">
             <CellTemplate>
@@ -41,7 +47,7 @@
             </CellTemplate>
         </PropertyColumn>
         <PropertyColumn Property="s => s.release_date" Title="Release Date" CellStyle="@_cellStyle" />
-        <TemplateColumn Title="Downloads" CellStyle="@_cellStyle" />
+        <PropertyColumn Property="s => s.ksp_version_max" Title="Downloads" CellStyle="@_cellStyle" />
     </Columns>
 </MudDataGrid>
 <MudText>@_ckanModules.Count items</MudText>
@@ -52,7 +58,7 @@
     private List<CkanModule> _ckanModules = [];
     private bool _loading = false;
     
-    private const string _cellStyle = "max-width: 30px; min-width: 30px; overflow-x: hidden; white-space: nowrap;";
+    private const string _cellStyle = "max-width: 400px; min-width: 50px; overflow-x: hidden; white-space: nowrap;";
     protected override async Task OnInitializedAsync()
     {
         _loading = true;
