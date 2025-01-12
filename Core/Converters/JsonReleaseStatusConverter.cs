@@ -1,27 +1,36 @@
 using System;
-
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace CKAN
 {
-    public class JsonReleaseStatusConverter : StringEnumConverter
+    public class JsonReleaseStatusConverter : JsonConverter<ReleaseStatus>
     {
-        public override object? ReadJson(JsonReader     reader,
-                                         Type           objectType,
-                                         object?        existingValue,
-                                         JsonSerializer serializer)
-            => reader.Value?.ToString() switch
+        public override ReleaseStatus Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? value = reader.GetString();
+
+            return value switch
             {
                 "alpha" => ReleaseStatus.development,
                 "beta"  => ReleaseStatus.testing,
-                null    => ReleaseStatus.stable,
+                null or "stable"    => ReleaseStatus.stable,
                 ""      => throw new JsonException("Empty release_status string"),
-                _       => base.ReadJson(reader, objectType,
-                                         existingValue, serializer),
+                _       => throw new JsonException($"Unexpected value {value} for {nameof(ReleaseStatus)}"),
+            };
+        }
+
+        public override void Write(Utf8JsonWriter writer, ReleaseStatus value, JsonSerializerOptions options)
+        {
+            string statusString = value switch
+            {
+                ReleaseStatus.development => "alpha",
+                ReleaseStatus.testing     => "beta",
+                ReleaseStatus.stable      => "stable",
+                _                         => throw new JsonException($"Unexpected value {value} for {nameof(ReleaseStatus)}"),
             };
 
-        public override bool CanWrite => true;
-        public override bool CanConvert(Type object_type) => false;
+            writer.WriteStringValue(statusString);
+        }
     }
 }

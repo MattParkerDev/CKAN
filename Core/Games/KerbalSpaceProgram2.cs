@@ -5,7 +5,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
-
+using System.Text.Json;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -163,8 +163,8 @@ namespace CKAN.Games.KerbalSpaceProgram2
                     : null)
                 ?? Array.Empty<GameVersion>();
 
-        public GameVersion[] ParseBuildsJson(JToken json)
-            => json.ToObject<GameVersion[]>()
+        public GameVersion[] ParseBuildsJson(JsonElement json)
+            => json.Deserialize<GameVersion[]>()
                 ?? Array.Empty<GameVersion>();
 
         public GameVersion DetectVersion(DirectoryInfo where)

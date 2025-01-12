@@ -5,9 +5,8 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Runtime.Serialization;
-
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ChinhDo.Transactions.FileManager;
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
@@ -40,28 +39,32 @@ namespace CKAN
         /// <summary>
         /// The available modules from this repository
         /// </summary>
-        [JsonProperty("available_modules", NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(JsonParallelDictionaryConverter<AvailableModule>))]
-        public readonly Dictionary<string, AvailableModule>? AvailableModules;
+        [JsonPropertyName("available_modules")]
+        [JsonInclude]
+        //[JsonConverter(typeof(JsonParallelDictionaryConverter<AvailableModule>))]
+        public Dictionary<string, AvailableModule>? AvailableModules { get; set; }
 
         /// <summary>
         /// The download counts from this repository's download_counts.json
         /// </summary>
-        [JsonProperty("download_counts", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("download_counts")]
+        [JsonInclude]
         public readonly SortedDictionary<string, int>? DownloadCounts;
 
         /// <summary>
         /// The game versions from this repository's builds.json
         /// Currently not used, maybe in the future
         /// </summary>
-        [JsonProperty("known_game_versions", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("known_game_versions")]
+        [JsonInclude]
         public readonly GameVersion[]? KnownGameVersions;
 
         /// <summary>
         /// The other repositories listed in this repo's repositories.json
         /// Currently not used, maybe in the future
         /// </summary>
-        [JsonProperty("repositories", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("repositories")]
+        [JsonInclude]
         public readonly Repository[]? Repositories;
 
         /// <summary>
@@ -105,6 +108,7 @@ namespace CKAN
         }
 
         [JsonConstructor]
+        [Newtonsoft.Json.JsonConstructor]
         private RepositoryData()
         {
         }
@@ -115,18 +119,9 @@ namespace CKAN
         /// <param name="path">Filename of the JSON file to create or overwrite</param>
         public void SaveTo(string path)
         {
-            StringWriter sw = new StringWriter(new StringBuilder());
-            using (JsonTextWriter writer = new JsonTextWriter(sw)
-            {
-                Formatting  = Formatting.Indented,
-                Indentation = 0,
-            })
-            {
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Serialize(writer, this);
-            }
+            var text = JsonSerializer.Serialize(this);
             TxFileManager file_transaction = new TxFileManager();
-            file_transaction.WriteAllText(path, sw + Environment.NewLine);
+            file_transaction.WriteAllText(path, text + Environment.NewLine);
         }
 
         /// <summary>
@@ -142,30 +137,36 @@ namespace CKAN
                 long fileSize = new FileInfo(path).Length;
                 log.DebugFormat("Trying to load repository data from {0}", path);
                 // Ain't OOP grand?!
-                using (var stream = File.Open(path, FileMode.Open))
-                using (var progressStream = new ReadProgressStream(
-                    stream,
-                    progress == null
-                        ? null
-                        // Treat JSON parsing as the first 50%
-                        : new ProgressImmediate<long>(p => progress.Report((int)(50 * p / fileSize)))))
-                using (var reader = new StreamReader(progressStream))
-                using (var jStream = new JsonTextReader(reader))
-                {
-                    var settings = new JsonSerializerSettings()
-                    {
-                        DateTimeZoneHandling = DateTimeZoneHandling.Utc,
-                        Context = new StreamingContext(
-                            StreamingContextStates.Other,
-                            progress == null
-                                ? null
-                                : new ProgressImmediate<int>(p =>
-                                    // Treat CkanModule creation as the last 50%
-                                    progress.Report(50 + (p / 2)))),
-                    };
-                    return JsonSerializer.Create(settings)
-                                         .Deserialize<RepositoryData>(jStream);
-                }
+                using var stream = File.OpenRead(path);
+                //var text = File.ReadAllText(path);
+                // using var progressStream = new ReadProgressStream(
+                //     stream,
+                //     progress == null
+                //         ? null
+                //         // Treat JSON parsing as the first 50%
+                //         : new ProgressImmediate<long>(p => progress.Report((int)(50 * p / fileSize))));
+                
+                //using var reader = new StreamReader(progressStream);
+                //using var jStream = new JsonTextReader(reader);
+                // var settings = new JsonSerializerSettings()
+                // {
+                //     DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+                //     Context = new StreamingContext(
+                //         StreamingContextStates.Other,
+                //         progress == null
+                //             ? null
+                //             : new ProgressImmediate<int>(p =>
+                //                 // Treat CkanModule creation as the last 50%
+                //                 progress.Report(50 + (p / 2)))),
+                // };
+
+                var test = new AvailableModule("test", []);
+                //var test2 = JsonSerializer.Serialize(test);
+
+                var results = JsonSerializer.Deserialize<RepositoryData>(stream, JsonSerializerOptions.Web);
+                //var test = JsonSerializer.Deserialize<RepositoryData>(text, JsonSerializerOptions.Web);
+                //var results = JsonSerializer.Create(settings).Deserialize<RepositoryData>(jStream);
+                return results;
             }
             catch (Exception exc)
             {
@@ -333,31 +334,33 @@ namespace CKAN
                                                      long          position)
             => filename.EndsWith(".ckan")
                 ? new ArchiveEntry(ProcessRegistryMetadataFromJSON(getContents() ?? "", filename),
-                                   null,
-                                   null,
-                                   null,
-                                   position)
-            : filename.EndsWith("download_counts.json")
-                ? new ArchiveEntry(null,
-                                   JsonConvert.DeserializeObject<SortedDictionary<string, int>>(getContents() ?? ""),
-                                   null,
-                                   null,
-                                   position)
-            : filename.EndsWith("builds.json")
-                ? new ArchiveEntry(null,
-                                   null,
-                                   game.ParseBuildsJson(JToken.Parse(getContents() ?? "")),
-                                   null,
-                                   position)
-            : filename.EndsWith("repositories.json")
-                ? new ArchiveEntry(null,
-                                   null,
-                                   null,
-                                   JObject.Parse(getContents() ?? "")
-                                          ?["repositories"]
-                                          ?.ToObject<Repository[]>(),
-                                   position)
-            : null;
+                    null,
+                    null,
+                    null,
+                    position)
+                : filename.EndsWith("download_counts.json")
+                    ? new ArchiveEntry(null,
+                        JsonSerializer.Deserialize<SortedDictionary<string, int>>(getContents() ?? ""),
+                        null,
+                        null,
+                        position)
+                    : filename.EndsWith("builds.json")
+                        ? new ArchiveEntry(null,
+                            null,
+                            game.ParseBuildsJson(JsonDocument.Parse(getContents() ?? "").RootElement),
+                            null,
+                            position)
+                        : filename.EndsWith("repositories.json")
+                            ? new ArchiveEntry(null,
+                                null,
+                                null,
+                                JsonSerializer.Deserialize<Repository[]>(
+                                    JsonDocument.Parse(getContents() ?? "")
+                                        .RootElement
+                                        .GetProperty("repositories").GetRawText()),
+                                position)
+                            : null;
+
 
         private static CkanModule? ProcessRegistryMetadataFromJSON(string metadata, string filename)
         {

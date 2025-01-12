@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-
+using System.Text.Json;
 using Newtonsoft.Json.Linq;
 
 using CKAN.DLC;
@@ -41,7 +41,7 @@ namespace CKAN.Games
         void              RefreshVersions(string? userAgent);
         List<GameVersion> KnownVersions { get; }
         GameVersion[]     EmbeddedGameVersions { get; }
-        GameVersion[]     ParseBuildsJson(JToken json);
+        GameVersion[]     ParseBuildsJson(JsonElement json);
         GameVersion?      DetectVersion(DirectoryInfo where);
         GameVersion[]     DefaultCompatibleVersions(GameVersion installedVersion);
         string            CompatibleVersionsFile { get; }

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Concurrent;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json;
 
 namespace CKAN.Versioning
 {
@@ -22,7 +22,7 @@ namespace CKAN.Versioning
     /// </para>
     /// </remarks>
     [Serializable]
-    [JsonConverter(typeof(JsonSimpleStringConverter))]
+    [JsonConverter(typeof(JsonSimpleStringConverter<ModuleVersion>))]
     public partial class ModuleVersion
     {
         private static readonly Regex Pattern =

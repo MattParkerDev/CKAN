@@ -8,10 +8,9 @@ using System.Runtime.Serialization;
 using System.ComponentModel;
 using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
-
+using System.Text.Json;
 using ChinhDo.Transactions.FileManager;
 using log4net;
-using Newtonsoft.Json;
 
 using CKAN.Configuration;
 using CKAN.Versioning;
@@ -310,19 +309,23 @@ namespace CKAN
             // Our registry needs to know our game instance when upgrading from older
             // registry formats. This lets us encapsulate that to make it available
             // after deserialisation.
-            var settings = new JsonSerializerSettings
-            {
-                DateTimeZoneHandling = DateTimeZoneHandling.Utc,
-                Context = new StreamingContext(StreamingContextStates.Other, gameInstance)
-            };
 
             log.DebugFormat("Trying to load registry from {0}", path);
             string json = File.ReadAllText(path);
             log.Debug("Registry JSON loaded; parsing...");
-            registry = new Registry(repoData);
-            JsonConvert.PopulateObject(json, registry, settings);
-            log.Debug("Registry loaded and parsed");
-            log.InfoFormat("Loaded CKAN registry at {0}", path);
+            try
+            {
+                var _registry = JsonSerializer.Deserialize<Registry>(json);
+                _registry!.LoadData(repoData);
+                registry = _registry;
+                log.Debug("Registry loaded and parsed");
+                log.InfoFormat("Loaded CKAN registry at {0}", path);
+            }
+            catch (Exception exc)
+            {
+                log.ErrorFormat("Failed to parse registry: {0}", exc.Message);
+                throw;
+            }
         }
 
         [MemberNotNull(nameof(registry))]
@@ -385,19 +388,9 @@ namespace CKAN
 
         private string Serialize()
         {
-            StringBuilder sb = new StringBuilder();
-            StringWriter sw = new StringWriter(sb);
+            var text = JsonSerializer.Serialize(registry);
 
-            using (JsonTextWriter writer = new JsonTextWriter(sw))
-            {
-                writer.Formatting = Formatting.Indented;
-                writer.Indentation = 0;
-
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Serialize(writer, registry);
-            }
-
-            return sw + Environment.NewLine;
+            return text + Environment.NewLine;
         }
 
         public void Save(bool enforce_consistency = true)

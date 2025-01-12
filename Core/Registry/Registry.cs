@@ -6,9 +6,9 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Transactions;
 using System.Diagnostics.CodeAnalysis;
-
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Autofac;
-using Newtonsoft.Json;
 using log4net;
 
 using CKAN.Configuration;
@@ -31,22 +31,23 @@ namespace CKAN
         [JsonIgnore] private const int LATEST_REGISTRY_VERSION = 3;
         [JsonIgnore] private static readonly ILog log = LogManager.GetLogger(typeof(Registry));
 
-        [JsonProperty] private int registry_version;
+        [JsonInclude]
+        private int registry_version;
 
         // name => Repository
-        [JsonProperty("sorted_repositories")]
+        [JsonPropertyName("sorted_repositories")]
         private SortedDictionary<string, Repository>? repositories;
 
         // name => relative path
-        [JsonProperty]
+        [JsonInclude]
         private Dictionary<string, string> installed_dlls;
-
-        [JsonProperty]
-        [JsonConverter(typeof(JsonParallelDictionaryConverter<InstalledModule>))]
+        
+        [JsonInclude]
+        //[JsonConverter(typeof(JsonParallelDictionaryConverter<InstalledModule>))]
         private readonly IDictionary<string, InstalledModule> installed_modules;
 
         // filename (case insensitive on Windows) => module
-        [JsonProperty]
+        [JsonInclude]
         private IDictionary<string, string> installed_files;
 
         /// <summary>
@@ -320,14 +321,21 @@ namespace CKAN
 
         #region Constructors / destructor
 
-        [JsonConstructor]
-        private Registry(RepositoryDataManager? repoData)
+        private Registry(RepositoryDataManager? repoData = null)
         {
             if (repoData != null)
             {
                 repoDataMgr = repoData;
                 repoDataMgr.Updated += RepositoriesUpdated;
             }
+            installed_modules = new Dictionary<string, InstalledModule>();
+            installed_files   = new Dictionary<string, string>();
+            installed_dlls    = new Dictionary<string, string>();
+        }
+        
+        [JsonConstructor]
+        private Registry()
+        {
             installed_modules = new Dictionary<string, InstalledModule>();
             installed_files   = new Dictionary<string, string>();
             installed_dlls    = new Dictionary<string, string>();
@@ -354,6 +362,15 @@ namespace CKAN
             this.installed_files   = installed_files;
             this.repositories      = repositories;
             registry_version       = LATEST_REGISTRY_VERSION;
+        }
+
+        public void LoadData(RepositoryDataManager repositoryDataManager)
+        {
+            if (repositoryDataManager != null)
+            {
+                repoDataMgr = repositoryDataManager;
+                repoDataMgr.Updated += RepositoriesUpdated;
+            }
         }
 
         public Registry(RepositoryDataManager repoData,
@@ -435,15 +452,21 @@ namespace CKAN
             // we had previously.
 
             lock (txMutex) {
-                var options = new JsonSerializerSettings
-                {
-                    DateTimeZoneHandling = DateTimeZoneHandling.Utc,
-                    ObjectCreationHandling = ObjectCreationHandling.Replace
-                };
-
                 if (transaction_backup != null)
                 {
-                    JsonConvert.PopulateObject(transaction_backup, this, options);
+                    var registryFromBackup = JsonSerializer.Deserialize<Registry>(transaction_backup);
+                    if (registryFromBackup != null)
+                    {
+                        registry_version = registryFromBackup.registry_version;
+                        repositories = registryFromBackup.repositories;
+                        installed_modules.Clear();
+                        foreach (var kvp in registryFromBackup.installed_modules)
+                        {
+                            installed_modules[kvp.Key] = kvp.Value;
+                        }
+                        installed_dlls = registryFromBackup.installed_dlls;
+                        installed_files = registryFromBackup.installed_files;
+                    }
                 }
 
                 enlisted_tx = null;
@@ -457,7 +480,7 @@ namespace CKAN
         {
             // Hey, you know what's a great way to back-up your own object?
             // JSON. ;)
-            transaction_backup = JsonConvert.SerializeObject(this, Formatting.None);
+            transaction_backup = JsonSerializer.Serialize(this);
             log.Debug("State saved");
         }
 
@@ -504,7 +527,7 @@ namespace CKAN
         #region Stateful views of data from repo data manager based on which repos we use
 
         [JsonIgnore]
-        private readonly RepositoryDataManager? repoDataMgr;
+        private RepositoryDataManager? repoDataMgr;
 
         [JsonIgnore]
         private CompatibilitySorter? sorter;
@@ -1286,14 +1309,12 @@ namespace CKAN
 
         // Older clients expect these properties and can handle them being empty ("{}") but not null
         #pragma warning disable IDE0052
-        [JsonProperty("available_modules",
-                      NullValueHandling = NullValueHandling.Include)]
-        [JsonConverter(typeof(JsonAlwaysEmptyObjectConverter))]
+        [JsonPropertyName("available_modules")]
+        //[JsonConverter(typeof(JsonAlwaysEmptyObjectConverter))]
         private readonly Dictionary<string, string> legacyAvailableModulesDoNotUse = new Dictionary<string, string>();
-
-        [JsonProperty("download_counts",
-                      NullValueHandling = NullValueHandling.Include)]
-        [JsonConverter(typeof(JsonAlwaysEmptyObjectConverter))]
+        
+        [JsonPropertyName("download_counts")]
+        //[JsonConverter(typeof(JsonAlwaysEmptyObjectConverter))]
         private readonly Dictionary<string, string> legacyDownloadCountsDoNotUse = new Dictionary<string, string>();
         #pragma warning restore IDE0052
 

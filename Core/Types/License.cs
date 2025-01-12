@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Collections.Generic;
-
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 #if NETSTANDARD2_0
 using CKAN.Extensions;
@@ -12,7 +11,7 @@ namespace CKAN
     /// <summary>
     /// A spec complement license string
     /// </summary>
-    [JsonConverter(typeof(JsonSimpleStringConverter))]
+    [JsonConverter(typeof(JsonSimpleStringConverter<License>))]
     public class License
     {
         public static readonly HashSet<string> valid_licenses =

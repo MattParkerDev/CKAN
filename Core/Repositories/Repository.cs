@@ -1,8 +1,7 @@
 using System;
 using System.ComponentModel;
-
-using Newtonsoft.Json;
-
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using CKAN.Games;
 
 namespace CKAN
@@ -17,15 +16,16 @@ namespace CKAN
         public int    priority = 0;
 
         // These are only sourced from repositories.json
-
-        [JsonProperty(DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
+        
         [DefaultValue(false)]
+        [JsonInclude]
         public bool   x_mirror;
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        [JsonInclude]
         public string? x_comment;
 
         [JsonConstructor]
+        [Newtonsoft.Json.JsonConstructor]
         public Repository(string name, Uri uri)
         {
             this.name = name;

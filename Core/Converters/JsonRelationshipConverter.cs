@@ -1,64 +1,68 @@
 using System;
 using System.Collections.Generic;
-
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace CKAN
 {
-    public class JsonRelationshipConverter : JsonConverter
+    public class JsonRelationshipConverter : JsonConverter<List<RelationshipDescriptor>>
     {
-        public override bool CanConvert(Type object_type)
+        // public override bool CanConvert(Type object_type)
+        // {
+        //     // Only convert when we're an explicit attribute
+        //     return false;
+        // }
+        
+        public override void Write(Utf8JsonWriter writer, List<RelationshipDescriptor> value, JsonSerializerOptions options)
         {
-            // Only convert when we're an explicit attribute
-            return false;
+            throw new NotImplementedException();
         }
 
-        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        public override List<RelationshipDescriptor>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            JToken token = JToken.Load(reader);
-            if (token.Type == JTokenType.Array)
+            if (reader.TokenType != JsonTokenType.StartArray)
             {
-                List<RelationshipDescriptor> rels = new List<RelationshipDescriptor>();
-                foreach (JObject child in token.Children<JObject>())
+                return null;
+            }
+
+            var rels = new List<RelationshipDescriptor>();
+
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+            {
+                using (var jsonDocument = JsonDocument.ParseValue(ref reader))
                 {
-                    if (child["any_of"] != null)
+                    var jsonObject = jsonDocument.RootElement;
+
+                    if (jsonObject.TryGetProperty("any_of", out _))
                     {
                         // Catch confused/invalid metadata
                         foreach (string forbiddenPropertyName in AnyOfRelationshipDescriptor.ForbiddenPropertyNames)
                         {
-                            if (child.Property(forbiddenPropertyName) != null)
+                            if (jsonObject.TryGetProperty(forbiddenPropertyName, out _))
                             {
                                 throw new Kraken(string.Format(
                                     Properties.Resources.JsonRelationshipConverterAnyOfCombined, forbiddenPropertyName));
                             }
                         }
-                        if (child.ToObject<AnyOfRelationshipDescriptor>()
-                            is AnyOfRelationshipDescriptor rel)
+
+                        var anyOfDescriptor = JsonSerializer.Deserialize<AnyOfRelationshipDescriptor>(jsonObject.GetRawText(), options);
+                        if (anyOfDescriptor != null)
                         {
-                            rels.Add(rel);
+                            rels.Add(anyOfDescriptor);
                         }
                     }
-                    else if (child["name"] != null)
+                    else if (jsonObject.TryGetProperty("name", out _))
                     {
-                        if (child.ToObject<ModuleRelationshipDescriptor>()
-                            is ModuleRelationshipDescriptor rel)
+                        var moduleDescriptor = JsonSerializer.Deserialize<ModuleRelationshipDescriptor>(jsonObject.GetRawText(), options);
+                        if (moduleDescriptor != null)
                         {
-                            rels.Add(rel);
+                            rels.Add(moduleDescriptor);
                         }
                     }
-
                 }
-                return rels;
             }
-            return null;
-        }
 
-        public override bool CanWrite => false;
-
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
+            return rels;
         }
     }
 }

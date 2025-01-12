@@ -1,66 +1,100 @@
 using System;
 using System.Collections.Generic;
-
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using log4net;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
-namespace CKAN
+namespace CKAN;
+
+/// <summary>
+/// [De]serializes a dictionary that might have some questionably
+/// valid data in it.
+/// If exceptions are thrown for any key/value pair, leave it out.
+/// Removes CkanModule objects from AvailableModule.module_version
+/// if License throws BadMetadataKraken.
+/// </summary>
+public class JsonLeakySortedDictionaryConverter<K, V> : JsonConverter<SortedDictionary<K, V>> 
+    where K : class 
+    where V : class
 {
-    /// <summary>
-    /// [De]serializes a dictionary that might have some questionably
-    /// valid data in it.
-    /// If exceptions are thrown for any key/value pair, leave it out.
-    /// Removes CkanModule objects from AvailableModule.module_version
-    /// if License throws BadMetadataKraken.
-    /// </summary>
-    public class JsonLeakySortedDictionaryConverter<K, V> : JsonConverter where K: class where V: class
+    public override SortedDictionary<K, V>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        var dict = new SortedDictionary<K, V>();
+        
+        if (reader.TokenType != JsonTokenType.StartObject)
         {
-            var dict = new SortedDictionary<K, V>();
-            foreach (var kvp in JObject.Load(reader))
+            throw new JsonException("Expected a JSON object.");
+        }
+
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.EndObject)
             {
-                try
-                {
-                    if (Activator.CreateInstance(typeof(K), kvp.Key) is K k
-                        && kvp.Value?.ToObject<V>() is V v)
-                    {
-                        dict.Add(k, v);
-                    }
-                }
-                catch (Exception exc)
-                {
-                    log.Warn($"Failed to deserialize {kvp.Key}: {kvp.Value}", exc);
-                }
+                return dict;
             }
-            return dict;
+
+            if (reader.TokenType != JsonTokenType.PropertyName)
+            {
+                throw new JsonException("Expected a property name.");
+            }
+
+            var keyString = reader.GetString();
+            K? key = null;
+
+            try
+            {
+                key = (K?)Activator.CreateInstance(typeof(K), keyString);
+            }
+            catch (Exception exc)
+            {
+                LogWarn($"Failed to create key instance for {keyString}", exc);
+                reader.TrySkip();
+                continue;
+            }
+
+            reader.Read();
+            V? value = null;
+            
+            if (reader.TokenType is not JsonTokenType.StartObject)
+            {
+                LogWarn($"Expected an object for key {keyString}, got {reader.TokenType}", new JsonException());
+                reader.TrySkip();
+                continue;
+            }
+
+            try
+            {
+                value = JsonSerializer.Deserialize<V>(ref reader, options);
+            }
+            catch (Exception exc)
+            {
+                LogWarn($"Failed to deserialize value for key {keyString}", exc);
+                continue;
+            }
+
+            if (key != null && value != null)
+            {
+                dict[key] = value;
+            }
         }
 
-        /// <summary>
-        /// Use default serializer for writing
-        /// </summary>
-        public override bool CanWrite => false;
+        throw new JsonException("Unexpected end of JSON.");
+    }
 
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
-        }
+    public override void Write(Utf8JsonWriter writer, SortedDictionary<K, V> value, JsonSerializerOptions options)
+    {
+        throw new NotImplementedException();
+    }
 
-        /// <summary>
-        /// We *only* want to be triggered for types that have explicitly
-        /// set an attribute in their class saying they can be converted.
-        /// By returning false here, we declare we're not interested in participating
-        /// in any other conversions.
-        /// </summary>
-        /// <returns>
-        /// false
-        /// </returns>
-        public override bool CanConvert(Type objectType)
-        {
-            return false;
-        }
+    public override bool CanConvert(Type typeToConvert)
+    {
+        var canConvert = typeToConvert == typeof(SortedDictionary<K, V>);
+        return canConvert;
+    }
 
-        private static readonly ILog log = LogManager.GetLogger(typeof(JsonLeakySortedDictionaryConverter<K, V>));
+    private static void LogWarn(string message, Exception exc)
+    {
+        // Replace with your preferred logging mechanism
+        Console.WriteLine($"{message}: {exc.Message}");
     }
 }

@@ -4,9 +4,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-
-using Newtonsoft.Json;
-
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using CKAN.Games;
 
 namespace CKAN.Versioning
@@ -849,16 +848,14 @@ namespace CKAN.Versioning
         }
     }
 
-    public sealed class GameVersionJsonConverter : JsonConverter
+    public sealed class GameVersionJsonConverter : JsonConverter<GameVersion>
     {
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            writer.WriteValue(value?.ToString());
-        }
+        public override bool CanConvert(Type objectType)
+            => objectType == typeof(GameVersion);
 
-        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        public override GameVersion? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var value = reader.Value?.ToString();
+            var value = reader.GetString();
 
             switch (value)
             {
@@ -884,7 +881,9 @@ namespace CKAN.Versioning
             }
         }
 
-        public override bool CanConvert(Type objectType)
-            => objectType == typeof(GameVersion);
+        public override void Write(Utf8JsonWriter writer, GameVersion value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToString());
+        }
     }
 }

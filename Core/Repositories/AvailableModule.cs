@@ -5,10 +5,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
-
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using log4net;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 
 using CKAN.Configuration;
 using CKAN.Versioning;
@@ -25,13 +24,18 @@ namespace CKAN
     public class AvailableModule
     {
         [JsonIgnore]
-        private string identifier;
+        private string identifier = null!;
 
         /// <param name="identifier">The module to keep track of</param>
-        [JsonConstructor]
+        //[Newtonsoft.Json.JsonConstructor]
         private AvailableModule(string identifier)
         {
             this.identifier = identifier;
+        }
+
+        [JsonConstructor]
+        private AvailableModule()
+        {
         }
 
         public AvailableModule(string identifier, IEnumerable<CkanModule> modules)
@@ -63,20 +67,21 @@ namespace CKAN
 
         // The map of versions -> modules, that's what we're about!
         // First element is the oldest version, last is the newest.
-        [JsonProperty]
+        [JsonPropertyName("module_version")]
+        [JsonInclude]
         [JsonConverter(typeof(JsonLeakySortedDictionaryConverter<ModuleVersion, CkanModule>))]
         internal SortedDictionary<ModuleVersion, CkanModule> module_version =
             new SortedDictionary<ModuleVersion, CkanModule>();
 
-        [OnError]
-        #pragma warning disable IDE0051, IDE0060
-        private static void OnError(StreamingContext context, ErrorContext errorContext)
-        #pragma warning restore IDE0051, IDE0060
-        {
-            log.WarnFormat("Discarding CkanModule, failed to parse {0}: {1}",
-                errorContext.Path, errorContext.Error.GetBaseException().Message);
-            errorContext.Handled = true;
-        }
+        //[OnError]
+        // #pragma warning disable IDE0051, IDE0060
+        // private static void OnError(StreamingContext context, ErrorContext errorContext)
+        // #pragma warning restore IDE0051, IDE0060
+        // {
+        //     log.WarnFormat("Discarding CkanModule, failed to parse {0}: {1}",
+        //         errorContext.Path, errorContext.Error.GetBaseException().Message);
+        //     errorContext.Handled = true;
+        // }
 
         /// <summary>
         /// Record the given module version as being available.
@@ -251,17 +256,8 @@ namespace CKAN
         /// </returns>
         public string FullMetadata()
         {
-            StringWriter sw = new StringWriter(new StringBuilder());
-            using (JsonTextWriter writer = new JsonTextWriter(sw)
-            {
-                Formatting  = Formatting.Indented,
-                Indentation = 4,
-                IndentChar  = ' '
-            })
-            {
-                new JsonSerializer().Serialize(writer, this);
-            }
-            return sw.ToString();
+            var text = JsonSerializer.Serialize(this);
+            return text;
         }
 
         private static readonly ILog log = LogManager.GetLogger(typeof(AvailableModule));

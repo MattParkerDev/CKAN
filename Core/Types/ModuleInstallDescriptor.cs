@@ -8,9 +8,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
 using System.Reflection;
-
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ICSharpCode.SharpZipLib.Zip;
-using Newtonsoft.Json;
 
 using CKAN.Games;
 
@@ -18,46 +18,55 @@ using CKAN.Games;
 
 namespace CKAN
 {
-    [JsonObject(MemberSerialization.OptIn)]
     public class ModuleInstallDescriptor : ICloneable, IEquatable<ModuleInstallDescriptor>
     {
 
         #region Properties
 
         // Either file, find, or find_regexp is required, we check this manually at deserialise.
-        [JsonProperty("file", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("file")]
+        [JsonInclude]
         public string? file;
-
-        [JsonProperty("find", NullValueHandling = NullValueHandling.Ignore)]
+        
+        [JsonPropertyName("find")]
+        [JsonInclude]
         public string? find;
-
-        [JsonProperty("find_regexp", NullValueHandling = NullValueHandling.Ignore)]
+        
+        [JsonPropertyName("find_regexp")]
+        [JsonInclude]
         public string? find_regexp;
-
-        [JsonProperty("find_matches_files", DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
+        
+        [JsonPropertyName("find_matches_files")]
+        [JsonInclude]
         [DefaultValue(false)]
         public bool find_matches_files = false;
-
-        [JsonProperty("install_to", DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
+        
+        [JsonPropertyName("install_to")]
+        [JsonInclude]
         [DefaultValue("GameData")]
         public string? install_to;
-
-        [JsonProperty("as", NullValueHandling = NullValueHandling.Ignore)]
+        
+        [JsonPropertyName("as")]
+        [JsonInclude]
         public string? @as;
-
-        [JsonProperty("filter", NullValueHandling = NullValueHandling.Ignore)]
+        
+        [JsonPropertyName("filter")]
+        [JsonInclude]
         [JsonConverter(typeof(JsonSingleOrArrayConverter<string>))]
         public List<string>? filter;
 
-        [JsonProperty("filter_regexp", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("filter_regexp")]
+        [JsonInclude]
         [JsonConverter(typeof(JsonSingleOrArrayConverter<string>))]
         public List<string>? filter_regexp;
 
-        [JsonProperty("include_only", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("include_only")]
+        [JsonInclude]
         [JsonConverter(typeof(JsonSingleOrArrayConverter<string>))]
         public List<string>? include_only;
 
-        [JsonProperty("include_only_regexp", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("include_only_regexp")]
+        [JsonInclude]
         [JsonConverter(typeof(JsonSingleOrArrayConverter<string>))]
         public List<string>? include_only_regexp;
 
@@ -122,7 +131,8 @@ namespace CKAN
         /// </summary>
         public object Clone()
             // Deep clone our object by running it through a serialisation cycle.
-            => JsonConvert.DeserializeObject<ModuleInstallDescriptor>(JsonConvert.SerializeObject(this, Formatting.None))!;
+            // JsonConvert.DeserializeObject<ModuleInstallDescriptor>(JsonConvert.SerializeObject(this, Formatting.None))!;
+            => JsonSerializer.Deserialize<ModuleInstallDescriptor>(JsonSerializer.Serialize(this))!;
 
         /// <summary>
         /// Compare two install stanzas
