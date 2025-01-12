@@ -19,7 +19,7 @@
     <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
     <ApplicationIcon>..\assets\ckan.ico</ApplicationIcon>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFramework>net8.0</TargetFramework>
     <FileAlignment>512</FileAlignment>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>

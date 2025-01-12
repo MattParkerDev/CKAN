@@ -21,7 +21,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>SYSLIB0050,IDE0090</WarningsNotAsErrors>
     <NoWarn>IDE1006</NoWarn>
-    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <TargetFramework>net8.0</TargetFramework>
     <CoreCompileDependsOn>PrepareResources;$(CompileDependsOn)</CoreCompileDependsOn>
   </PropertyGroup>
   <PropertyGroup>
@@ -47,6 +47,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.7.0" />
+    <PackageReference Include="System.Drawing.Common" Version="4.7.3" />
     <PackageReference Include="System.Security.Permissions" Version="4.7.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="Autofac" Version="4.9.4" />
@@ -96,6 +97,9 @@
     <Content Include="log4net.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="New\" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="MakeAssemblyInfo" BeforeTargets="BeforeBuild">

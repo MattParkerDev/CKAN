@@ -22,7 +22,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>CS0618</WarningsNotAsErrors>
     <NoWarn>IDE1006,NU1701</NoWarn>
-    <TargetFrameworks>net8.0-windows</TargetFrameworks>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <BaseTargetFramework>$(TargetFramework.Replace("-windows", ""))</BaseTargetFramework>
     <UseWindowsForms Condition=" '$(TargetFramework)' == 'net8.0-windows' ">true</UseWindowsForms>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
@@ -38,6 +38,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Nullable" Version="1.3.1" PrivateAssets="all" />
     <PackageReference Include="IndexRange" Version="1.0.3" />
+    <PackageReference Include="System.Drawing.Common" Version="4.7.3" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net48' ">
     <Reference Include="System" />
