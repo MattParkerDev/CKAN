@@ -16,12 +16,8 @@
                 @(string.Join(", ", context.Item.SearchableAuthors))
             </CellTemplate>
         </PropertyColumn>
-        <PropertyColumn Property="s => s.version" />
-        <PropertyColumn Property="s => s.ksp_version" Title="KSP Version">
-            <CellTemplate>
-                @(context.Item.ksp_version?.ToString() ?? "Any")
-            </CellTemplate>
-        </PropertyColumn>
+        <PropertyColumn Property="s => s.version" Title="Version" />
+        <PropertyColumn Property="s => s.ksp_version" Title="KSP Version" />
     </Columns>
 </MudDataGrid>
 
