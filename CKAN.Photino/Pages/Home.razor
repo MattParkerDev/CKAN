@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using System.Diagnostics
 
 @inject RepositoryDataManager RepositoryDataManager
 @inject RegistryManager RegistryManager
@@ -8,14 +9,15 @@
 @*     <MudText>@module.SearchableName</MudText> *@
 @* } *@
 
-<MudDataGrid Items="@_ckanModules">
+<MudDataGrid Items="@_ckanModules" Loading="@_loading">
     <Columns>
-        <PropertyColumn Property="arg => arg.SearchableName" />
-        <PropertyColumn Property="arg => arg.SearchableAuthors">
+        <PropertyColumn Property="s => s.SearchableName" />
+        <PropertyColumn Property="s => s.SearchableAuthors" Sortable="false">
             <CellTemplate>
                 @(string.Join(", ", context.Item.SearchableAuthors))
             </CellTemplate>
         </PropertyColumn>
+        <PropertyColumn Property="s => s.version" />
     </Columns>
 </MudDataGrid>
 
@@ -23,22 +25,25 @@
 
     private List<AvailableModule> _modules = [];
     private List<CkanModule> _ckanModules = [];
+    private bool _loading = false;
     protected override async Task OnInitializedAsync()
     {
-        RepositoryDataManager.Prepopulate(RegistryManager.registry.Repositories.Values.ToList(), null);
-
-        if (RegistryManager.registry.HasAnyAvailable() is false)
-        {
-            // Abort the refresh so we can update the repo data
-        }
+        _loading = true;
+        Console.WriteLine("Loading registry");
+        var timer = Stopwatch.StartNew();
+        await Task.Run(() => RepositoryDataManager.Prepopulate(RegistryManager.registry.Repositories.Values.ToList(), null));
+        timer.Stop();
+        Console.WriteLine($"Prepopulate took {timer.ElapsedMilliseconds}ms");
 
         var repository = RegistryManager.registry.Repositories.Single().Value;
-        var modules = RepositoryDataManager.GetAllAvailableModules([repository]).ToList();
+        var modules = await Task.Run(() => RepositoryDataManager.GetAllAvailableModules(new List<Repository> { repository }).ToList());
         _modules = modules;
-        _ckanModules = modules
+        var ckanModules = modules
             .Select(m => m.Latest(ReleaseStatus.stable) ?? throw new InvalidOperationException())
             .OrderBy(m => m.SearchableName)
             .ToList();
+        _loading = false;
+        _ckanModules = ckanModules;
         Console.WriteLine("Done");
     }
 
