@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using System.Diagnostics
+@using ByteSizeLib
 
 @inject RepositoryDataManager RepositoryDataManager
 @inject RegistryManager RegistryManager
@@ -18,8 +19,19 @@
         </PropertyColumn>
         <PropertyColumn Property="s => s.version" Title="Version" />
         <PropertyColumn Property="s => s.ksp_version" Title="KSP Version" />
+        <PropertyColumn Property="s => s.download_size" Title="Download">
+            <CellTemplate>
+                @ByteSize.FromBits(context.Item.download_size).ToString()
+            </CellTemplate>
+        </PropertyColumn>
+        <PropertyColumn Property="s => s.install_size" Title="Install">
+            <CellTemplate>
+                @ByteSize.FromBits(context.Item.install_size).ToString()
+            </CellTemplate>
+        </PropertyColumn>
     </Columns>
 </MudDataGrid>
+<MudText>@_ckanModules.Count items</MudText>
 
 @code {
 
