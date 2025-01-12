@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using CKAN.Versioning;
 
 namespace CKAN;
@@ -11,35 +13,33 @@ public class DictionaryWithErrorHandlingConverter : JsonConverter<SortedDictiona
     //private static int _runs = 0;
     public override SortedDictionary<ModuleVersion, CkanModule> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        //_runs++;
-        //Console.WriteLine(_runs);
-        var dict = new SortedDictionary<ModuleVersion, CkanModule>();
+        var concurrentDict = new ConcurrentDictionary<ModuleVersion, CkanModule>();
 
         // Open the JSON object
         using var doc = JsonDocument.ParseValue(ref reader);
-        foreach (var property in doc.RootElement.EnumerateObject())
+        Parallel.ForEach(doc.RootElement.EnumerateObject(), property =>
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(property.Name))
                 {
-                    continue;
+                    return;
                 }
 
                 var moduleVersion = new ModuleVersion(property.Name);
                 var value = property.Value.Deserialize<CkanModule>(options);
 
-                dict[moduleVersion] = value!;
+                concurrentDict[moduleVersion] = value!;
             }
             catch (Exception e)
             {
                 // If deserialization fails for a pair, simply ignore it
                 Console.WriteLine($"Failed to deserialize key-value pair: {e.Message}");
-                continue;
             }
-        }
+        });
 
-        return dict;
+        var sortedDictionary = new SortedDictionary<ModuleVersion, CkanModule>(concurrentDict);
+        return sortedDictionary;
     }
 
     public override void Write(Utf8JsonWriter writer, SortedDictionary<ModuleVersion, CkanModule> value, JsonSerializerOptions options)
